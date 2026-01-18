@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA 125 (Interview Prep)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .sidebar-open { transform: translateX(0); }
+        .sidebar-closed { transform: translateX(-100%); }
+        @media (min-width: 1024px) { .sidebar-closed { transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-screen flex overflow-hidden">
+
+    <div id="login-screen" class="absolute inset-0 bg-gray-950 z-50 flex flex-col items-center justify-center">
+        <div class="bg-gray-900 p-8 rounded-xl border border-gray-700 shadow-2xl text-center max-w-sm w-full mx-4">
+            <h1 class="text-3xl font-bold text-green-500 mb-2">DSA 125</h1>
+            <p class="text-gray-500 text-xs mb-8 uppercase tracking-widest">Top Interview Questions</p>
+            <div class="space-y-4 text-left">
+                <input type="email" id="email-input" placeholder="Email" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white focus:border-green-500 outline-none">
+                <input type="password" id="password-input" placeholder="Password" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white focus:border-green-500 outline-none">
+                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded transition shadow-lg">LOGIN</button>
+                <p class="text-xs text-center text-gray-400 mt-4 cursor-pointer hover:text-white" onclick="toggleAuthMode()" id="auth-switch-text">New? Create Account</p>
+            </div>
+            <p id="login-error" class="text-red-400 text-xs mt-4 hidden"></p>
+        </div>
+    </div>
+
+    <div id="app-content" class="relative flex h-screen w-full hidden">
+        
+        <aside id="sidebar" class="absolute lg:relative w-80 bg-gray-800 h-full border-r border-gray-700 flex flex-col z-30 sidebar-closed lg:translate-x-0">
+            <div class="p-5 border-b border-gray-700 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-green-400">DSA 125 <span class="text-xs text-gray-500">By Pavan Kumar</span></h1>
+                <button onclick="logout()" class="text-xs text-red-400 border border-red-900 bg-red-900/10 px-2 py-1 rounded">Logout</button>
+            </div>
+            <div class="p-4 border-b border-gray-700 bg-gray-800/50">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="h-12 w-12"><canvas id="progressChart"></canvas></div>
+                    <div><span class="text-xs text-gray-400">Progress</span><br><span class="text-xl font-bold text-white"><span id="completed-count">0</span>/125</span></div>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+                <button onclick="loadChapter('Easy')" class="w-full text-left px-3 py-2 rounded bg-green-900/20 text-green-400 border border-green-900/50 text-sm font-bold">🟢 Easy</button>
+                <button onclick="loadChapter('Medium')" class="w-full text-left px-3 py-2 rounded bg-yellow-900/20 text-yellow-400 border border-yellow-900/50 text-sm font-bold">🟡 Medium</button>
+                <button onclick="loadChapter('Hard')" class="w-full text-left px-3 py-2 rounded bg-red-900/20 text-red-400 border border-red-900/50 text-sm font-bold">🔴 Hard</button>
+                <div id="problem-list" class="mt-4 space-y-1"></div>
+            </nav>
+        </aside>
+
+        <main class="flex-1 flex flex-col bg-gray-900 w-full">
+            <header class="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-white">☰</button>
+                    <div>
+                        <h2 id="problem-title" class="text-lg font-bold text-white">Select a Problem</h2>
+                        <span id="problem-id" class="text-xs text-gray-500">ID: --</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <select id="lang-select" onchange="switchLang()" class="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600 outline-none">
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                    <div class="text-right">
+                        <span class="text-[10px] text-gray-500 block">TIME</span>
+                        <span id="timer" class="text-lg font-mono text-green-400 font-bold">00:00</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+                    <h3 class="text-lg font-bold text-blue-400 mb-2">Problem Description</h3>
+                    <p id="desc-text" class="text-sm text-gray-300 leading-relaxed mb-4 whitespace-pre-wrap">Select a problem from the left sidebar to begin.</p>
+                    
+                    <div id="test-case-box" class="hidden bg-gray-900 rounded p-3 border border-gray-600 font-mono text-xs">
+                        <div class="flex gap-4 border-b border-gray-700 pb-2 mb-2 text-gray-500">
+                            <span class="w-20">INPUT</span>
+                            <span>EXPECTED OUTPUT</span>
+                        </div>
+                        <div class="flex gap-4">
+                            <span id="tc-input" class="w-20 text-yellow-500 truncate"></span>
+                            <span id="tc-output" class="text-green-500 truncate"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col lg:grid lg:grid-cols-2 gap-4 h-[500px]">
+                    <div class="flex flex-col bg-[#1e1e1e] rounded-xl border border-gray-700 overflow-hidden">
+                        <div class="bg-[#252526] px-4 py-2 flex justify-between items-center border-b border-[#3e3e42]">
+                            <span id="filename" class="text-xs font-bold text-gray-400">main.py</span>
+                            <div class="flex gap-3">
+                                <button onclick="resetCode()" class="text-[10px] text-red-400 hover:text-red-300">RESET</button>
+                                <span id="save-status" class="text-[10px] text-gray-500">UNSAVED</span>
+                            </div>
+                        </div>
+                        <div id="monaco-container" class="flex-1"></div>
+                    </div>
+
+                    <div class="flex flex-col gap-4 h-full">
+                        <div class="bg-gray-800 rounded-xl p-3 border border-gray-700 flex flex-col h-1/3">
+                            <span class="text-xs font-bold text-blue-400 mb-1">Custom Input (Stdin)</span>
+                            <textarea id="custom-input" class="flex-1 bg-gray-900 text-white text-xs p-2 rounded border border-gray-600 outline-none resize-none" placeholder="Enter input here..."></textarea>
+                        </div>
+                        
+                        <div class="bg-black rounded-xl border border-gray-700 flex flex-col flex-1 overflow-hidden">
+                            <div class="bg-gray-800 px-3 py-1 flex justify-between items-center border-b border-gray-700">
+                                <span class="text-xs font-bold text-gray-400">Terminal</span>
+                                <button onclick="document.getElementById('term-out').innerText=''" class="text-[10px] text-gray-500 hover:text-white">CLEAR</button>
+                            </div>
+                            <div id="term-out" class="flex-1 p-3 font-mono text-xs text-gray-300 overflow-auto whitespace-pre-wrap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 pb-8">
+                    <button onclick="runCode()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded shadow-lg transition flex justify-center items-center gap-2">
+                        <span>▶</span> Run Code
+                    </button>
+                    <button onclick="markDone()" id="submit-btn" class="flex-1 bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded shadow-lg transition flex justify-center items-center gap-2 opacity-50 cursor-not-allowed" disabled>
+                        <span>✓</span> Mark as Done
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCi_Fx58E_OOkzofBApcj3unnitJ6a0vd4",
+            authDomain: "problemtracker-808bc.firebaseapp.com",
+            projectId: "problemtracker-808bc",
+            storageBucket: "problemtracker-808bc.firebasestorage.app",
+            messagingSenderId: "62173895306",
+            appId: "1:62173895306:web:558039efe7cb2ebfd2eb73"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let editor, currentProblem, timerInterval, secondsElapsed=0, currentUser, completionChart;
+        let isLoginMode = true;
+
+        // --- TEMPLATES (Global Access) ---
+        const templates = {
+            python: "# Write your Python code here\nimport sys\n\n# The input() function reads from the 'Custom Input' box below\n# Example: If your input is '10', n = int(input()) will be 10\n\ndef solve():\n    # Write your logic here\n    pass\n\nsolve()",
+            java: "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Scanner reads from 'Custom Input' box\n        Scanner sc = new Scanner(System.in);\n        \n        // Example: int n = sc.nextInt();\n        // System.out.println(n);\n    }\n}",
+            cpp: "#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    // cin reads from 'Custom Input' box\n    // int n; cin >> n;\n    // cout << n;\n    return 0;\n}"
+        };
+
+        // --- PROBLEM DATA (Same as before, abbreviated for clarity) ---
+        const problems = [
+            { 
+                id: "1", type: "Easy", title: "Two Sum", 
+                desc: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nInput: First line `target`, Second line `nums` (space separated).\nOutput: Indices of the two numbers (e.g., \"0 1\").",
+                testInput: "9\n2 7 11 15", expected: "0 1"
+            },
+            { 
+                id: "2", type: "Easy", title: "Average of Levels in Binary Tree", 
+                desc: "Return the average value of the nodes on each level in the form of an array.\n\nInput: Tree (Level Order).\nOutput: Averages.",
+                testInput: "3 9 20 -1 -1 15 7", expected: "[3.0, 14.5, 11.0]"
+            },
+            { 
+                id: "3", type: "Easy", title: "Linked List Cycle", 
+                desc: "Determine if the linked list has a cycle in it.\n\nInput: Head of list.\nOutput: true/false.",
+                testInput: "3 2 0 -4", expected: "true" 
+            },
+            { 
+                id: "4", type: "Easy", title: "Path Sum", 
+                desc: "Given a binary tree and a targetSum, return true if the tree has a root-to-leaf path summing to targetSum.\n\nInput: targetSum, Tree.\nOutput: true/false.",
+                testInput: "22\n5 4 8 11 -1 13 4 7 2 -1 -1 -1 1", expected: "true"
+            },
+            { 
+                id: "5", type: "Easy", title: "Implement Stack using Queues", 
+                desc: "Implement a LIFO stack using only two queues.\n\nInput: Commands (push, pop, top, empty).\nOutput: Results.",
+                testInput: "push(1), push(2), top(), pop(), empty()", expected: "2 2 false"
+            },
+            { 
+                id: "6", type: "Easy", title: "Min Absolute Difference in BST", 
+                desc: "Find the minimum absolute difference between values of any two nodes in a BST.\n\nInput: Tree.\nOutput: Min Difference.",
+                testInput: "4 2 6 1 3", expected: "1"
+            },
+            { 
+                id: "7", type: "Easy", title: "Palindrome Linked List", 
+                desc: "Given the head of a singly linked list, return true if it is a palindrome.\n\nInput: List.\nOutput: true/false.",
+                testInput: "1 2 2 1", expected: "true"
+            },
+            { 
+                id: "8", type: "Easy", title: "Missing Number", 
+                desc: "Given an array containing n distinct numbers in range [0, n], return the only number missing.\n\nInput: Nums.\nOutput: Missing Number.",
+                testInput: "3 0 1", expected: "2"
+            },
+            { 
+                id: "9", type: "Easy", title: "Happy Number", 
+                desc: "Repeatedly sum the squares of digits until 1 or cycle.\n\nInput: n.\nOutput: true/false.",
+                testInput: "19", expected: "true"
+            },
+            { 
+                id: "10", type: "Easy", title: "Plus One", 
+                desc: "Increment the large integer represented as an integer array digits.\n\nInput: Digits.\nOutput: New Digits.",
+                testInput: "1 2 3", expected: "1 2 4"
+            },
+            { 
+                id: "11", type: "Easy", title: "Single Number", 
+                desc: "Every element appears twice except for one. Find it.\n\nInput: Nums.\nOutput: Single Number.",
+                testInput: "4 1 2 1 2", expected: "4"
+            },
+            { 
+                id: "12", type: "Easy", title: "Min Cost Climbing Stairs", 
+                desc: "Cost to climb from step 0 or 1. Min cost to reach top.\n\nInput: Costs.\nOutput: Min Cost.",
+                testInput: "10 15 20", expected: "15"
+            },
+            { 
+                id: "13", type: "Easy", title: "Range Sum Query", 
+                desc: "Calculate sum of elements between indices i and j.\n\nInput: Array, Range [i, j].\nOutput: Sum.",
+                testInput: "-2 0 3 -5 2 -1\n0 2", expected: "1"
+            },
+            { 
+                id: "14", type: "Easy", title: "Contains Duplicate II", 
+                desc: "True if nums[i] == nums[j] and abs(i - j) <= k.\n\nInput: k, Nums.\nOutput: true/false.",
+                testInput: "3\n1 2 3 1", expected: "true"
+            },
+            { 
+                id: "15", type: "Easy", title: "Squares of a Sorted Array", 
+                desc: "Return an array of the squares of each number sorted in non-decreasing order.\n\nInput: Nums.\nOutput: Sorted Squares.",
+                testInput: "-4 -1 0 3 10", expected: "0 1 9 16 100"
+            },
+            { 
+                id: "16", type: "Easy", title: "Subtree of Another Tree", 
+                desc: "Is `subRoot` a subtree of `root`?\n\nInput: Root, SubRoot.\nOutput: true/false.",
+                testInput: "3 4 5 1 2\n4 1 2", expected: "true"
+            },
+
+            // --- MEDIUM ADDITIONS (The "Heavy Hitters") ---
+            { 
+                id: "32", type: "Medium", title: "Add Two Numbers", 
+                desc: "Add two numbers represented by linked lists.\n\nInput: List1, List2.\nOutput: Sum List.",
+                testInput: "2 4 3\n5 6 4", expected: "7 0 8"
+            },
+            { 
+                id: "33", type: "Medium", title: "LRU Cache", 
+                desc: "Design a Least Recently Used (LRU) cache.\n\nInput: Capacity, Ops.\nOutput: Results.",
+                testInput: "2\nput(1,1), put(2,2), get(1), put(3,3), get(2)", expected: "1 -1"
+            },
+            { 
+                id: "34", type: "Medium", title: "Generate Parentheses", 
+                desc: "Generate all combinations of well-formed parentheses.\n\nInput: n.\nOutput: List.",
+                testInput: "3", expected: "((())), (()()), (())(), ()(()), ()()()"
+            },
+            { 
+                id: "35", type: "Medium", title: "Daily Temperatures", 
+                desc: "Wait days for a warmer temperature.\n\nInput: Temps.\nOutput: Days array.",
+                testInput: "73 74 75 71 69 72 76 73", expected: "1 1 4 2 1 1 0 0"
+            },
+            { 
+                id: "36", type: "Medium", title: "Search a 2D Matrix", 
+                desc: "Search for target in m x n matrix (sorted rows).\n\nInput: Target, Matrix.\nOutput: true/false.",
+                testInput: "3\n1 3 5 7\n10 11 16 20\n23 30 34 60", expected: "true"
+            },
+            { 
+                id: "37", type: "Medium", title: "Kth Largest Element in Array", 
+                desc: "Find the kth largest element (without sorting).\n\nInput: k, Nums.\nOutput: Value.",
+                testInput: "2\n3 2 1 5 6 4", expected: "5"
+            },
+            { 
+                id: "38", type: "Medium", title: "Subsets", 
+                desc: "Return all possible subsets (the power set).\n\nInput: Nums.\nOutput: Subsets.",
+                testInput: "1 2 3", expected: "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]"
+            },
+            { 
+                id: "39", type: "Medium", title: "Permutations", 
+                desc: "Return all possible permutations.\n\nInput: Nums.\nOutput: Permutations.",
+                testInput: "1 2 3", expected: "[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]"
+            },
+            { 
+                id: "40", type: "Medium", title: "Combinations", 
+                desc: "Return combinations of k numbers out of 1..n.\n\nInput: n k.\nOutput: Combinations.",
+                testInput: "4 2", expected: "[[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]"
+            },
+            { 
+                id: "41", type: "Medium", title: "Gas Station", 
+                desc: "Can you complete the circuit?\n\nInput: Gas, Cost.\nOutput: Start Index.",
+                testInput: "1 2 3 4 5\n3 4 5 1 2", expected: "3"
+            },
+            { 
+                id: "42", type: "Medium", title: "Binary Tree Right Side View", 
+                desc: "Return values of nodes visible from the right side.\n\nInput: Tree.\nOutput: Values.",
+                testInput: "1 2 3 -1 5 -1 4", expected: "1 3 4"
+            },
+            { 
+                id: "43", type: "Medium", title: "K Closest Points to Origin", 
+                desc: "Find K closest points to (0,0).\n\nInput: K, Points.\nOutput: Points.",
+                testInput: "1\n1 3\n-2 2", expected: "-2 2"
+            },
+            { 
+                id: "44", type: "Medium", title: "Detect Squares", 
+                desc: "Count squares with a given query point.\n\nInput: Ops.\nOutput: Counts.",
+                testInput: "add(3,10), add(11,2), add(3,2), count(11,10)", expected: "1"
+            },
+            { 
+                id: "45", type: "Medium", title: "Time Based Key-Value Store", 
+                desc: "Store and retrieve keys with timestamps.\n\nInput: Ops.\nOutput: Values.",
+                testInput: "set(foo,bar,1), get(foo,1), get(foo,3)", expected: "bar bar"
+            },
+            { 
+                id: "46", type: "Medium", title: "Encode and Decode Strings", 
+                desc: "Design algos to encode/decode list of strings.\n\nInput: List.\nOutput: Decoded List.",
+                testInput: "lint code love you", expected: "lint code love you"
+            },
+            { 
+                id: "47", type: "Medium", title: "Valid Parenthesis String", 
+                desc: "Check valid string with '(', ')', and '*'.\n\nInput: String.\nOutput: true/false.",
+                testInput: "(*))", expected: "true"
+            },
+            { 
+                id: "48", type: "Medium", title: "Cheapest Flights Within K Stops", 
+                desc: "Find cheapest price from src to dst with max k stops.\n\nInput: n, flights, src, dst, k.\nOutput: Price.",
+                testInput: "3\n0 1 100, 1 2 100, 0 2 500\n0 2 1", expected: "200"
+            },
+            { 
+                id: "49", type: "Medium", title: "Redundant Connection", 
+                desc: "Remove an edge to make the graph a tree.\n\nInput: Edges.\nOutput: Removed Edge.",
+                testInput: "1 2\n1 3\n2 3", expected: "2 3"
+            },
+            { 
+                id: "50", type: "Medium", title: "Walls and Gates", 
+                desc: "Fill empty rooms with distance to nearest gate.\n\nInput: Grid (INF=2147483647).\nOutput: Grid.",
+                testInput: "INF -1 0 INF\nINF INF INF -1\nINF -1 INF -1\n0 -1 INF INF", expected: "3 -1 0 1\n2 2 1 -1\n1 -1 2 -1\n0 -1 3 4"
+            },
+            { 
+                id: "51", type: "Medium", title: "Longest Palindromic Substring", 
+                desc: "Find the longest palindrome in s.\n\nInput: String.\nOutput: Substring.",
+                testInput: "babad", expected: "bab"
+            },
+            { 
+                id: "52", type: "Medium", title: "Construct BT from Pre & Inorder", 
+                desc: "Build tree from preorder and inorder arrays.\n\nInput: Preorder, Inorder.\nOutput: Tree Level Order.",
+                testInput: "3 9 20 15 7\n9 3 15 20 7", expected: "3 9 20 15 7"
+            },
+            { 
+                id: "53", type: "Medium", title: "Two Sum II", 
+                desc: "Two sum in a sorted array (1-indexed).\n\nInput: Target, Nums.\nOutput: Indices.",
+                testInput: "9\n2 7 11 15", expected: "1 2"
+            },
+            { 
+                id: "54", type: "Medium", title: "Evaluate Reverse Polish Notation", 
+                desc: "Eval RPN expression.\n\nInput: Tokens.\nOutput: Result.",
+                testInput: "2 1 + 3 *", expected: "9"
+            },
+            { 
+                id: "55", type: "Medium", title: "Letter Combinations of a Phone Number", 
+                desc: "Return all possible letter combinations.\n\nInput: Digits.\nOutput: List.",
+                testInput: "23", expected: "ad ae af bd be bf cd ce cf"
+            },
+            { 
+                id: "56", type: "Medium", title: "Merge Intervals", 
+                desc: "Merge overlapping intervals.\n\nInput: Intervals.\nOutput: Merged.",
+                testInput: "1 3\n2 6\n8 10\n15 18", expected: "1 6\n8 10\n15 18"
+            },
+            { 
+                id: "57", type: "Medium", title: "Surrounded Regions", 
+                desc: "Capture regions by flipping 'O's surrounded by 'X's.\n\nInput: Board.\nOutput: Board.",
+                testInput: "X X X X\nX O O X\nX X O X\nX O X X", expected: "X X X X\nX X X X\nX X X X\nX O X X"
+            },
+            { 
+                id: "58", type: "Medium", title: "Reverse First K Elements of Queue", 
+                desc: "Reverse the first K elements of a queue.\n\nInput: K, Queue.\nOutput: Queue.",
+                testInput: "3\n1 2 3 4 5", expected: "3 2 1 4 5"
+            },
+            { 
+                id: "59", type: "Medium", title: "Network Delay Time", 
+                desc: "Time for all nodes to receive signal.\n\nInput: Times, N, K.\nOutput: Time.",
+                testInput: "2 1 1\n2 3 1\n3 4 1\n4\n2", expected: "2"
+            },
+            { 
+                id: "60", type: "Medium", title: "Koko Eating Bananas", 
+                desc: "Min eating speed to finish in h hours.\n\nInput: Piles, H.\nOutput: Speed.",
+                testInput: "3 6 7 11\n8", expected: "4"
+            },
+            { 
+                id: "61", type: "Medium", title: "Target Sum", 
+                desc: "Ways to assign +/- to nums to get target.\n\nInput: Target, Nums.\nOutput: Ways.",
+                testInput: "3\n1 1 1 1 1", expected: "5"
+            },
+            { 
+                id: "62", type: "Medium", title: "Task Scheduler", 
+                desc: "Least intervals to complete tasks with cooling.\n\nInput: Tasks, n.\nOutput: Intervals.",
+                testInput: "A A A B B B\n2", expected: "8"
+            },
+            { 
+                id: "63", type: "Medium", title: "Word Search", 
+                desc: "Does word exist in grid?\n\nInput: Word, Grid.\nOutput: true/false.",
+                testInput: "ABCCED\nA B C E\nS F C S\nA D E E", expected: "true"
+            },
+            { 
+                id: "64", type: "Medium", title: "Reverse Integer", 
+                desc: "Reverse digits of an integer (handle overflow).\n\nInput: x.\nOutput: Reversed.",
+                testInput: "123", expected: "321"
+            },
+            { 
+                id: "65", type: "Medium", title: "Permutation in String", 
+                desc: "Check if s2 contains a permutation of s1.\n\nInput: s1 s2.\nOutput: true/false.",
+                testInput: "ab eidbaooo", expected: "true"
+            },
+            { 
+                id: "66", type: "Medium", title: "Palindrome Partitioning", 
+                desc: "Partition s such that every substring is a palindrome.\n\nInput: s.\nOutput: Partitions.",
+                testInput: "aab", expected: "[[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]"
+            },
+            { 
+                id: "67", type: "Medium", title: "Insert into BST", 
+                desc: "Insert value into BST.\n\nInput: Val, Tree.\nOutput: Tree.",
+                testInput: "5\n4 2 7 1 3", expected: "4 2 7 1 3 5"
+            },
+            { 
+                id: "68", type: "Medium", title: "Find Min in Rotated Sorted Array", 
+                desc: "Find the minimum element.\n\nInput: Nums.\nOutput: Min.",
+                testInput: "3 4 5 1 2", expected: "1"
+            },
+            { 
+                id: "69", type: "Medium", title: "Car Fleet", 
+                desc: "How many car fleets will arrive at destination?\n\nInput: Target, Pos, Speed.\nOutput: Fleets.",
+                testInput: "12\n10 8 0 5 3\n2 4 1 1 3", expected: "3"
+            },
+            { 
+                id: "70", type: "Medium", title: "Implement Trie (Prefix Tree)", 
+                desc: "Insert, search, and startsWith.\n\nInput: Commands.\nOutput: Results.",
+                testInput: "insert(apple), search(apple), search(app), startsWith(app)", expected: "true false true"
+            },
+            { 
+                id: "71", type: "Medium", title: "Course Schedule II", 
+                desc: "Return valid course ordering.\n\nInput: N, Prereqs.\nOutput: Order.",
+                testInput: "2\n1 0", expected: "0 1"
+            },
+
+            // --- HARD ADDITIONS ---
+            { 
+                id: "109", type: "Hard", title: "Burst Balloons", 
+                desc: "Max coins by bursting balloons.\n\nInput: Nums.\nOutput: Coins.",
+                testInput: "3 1 5 8", expected: "167"
+            },
+            { 
+                id: "110", type: "Hard", title: "Reconstruct Itinerary", 
+                desc: "Find valid itinerary using all tickets.\n\nInput: Tickets.\nOutput: Itinerary.",
+                testInput: "MUC LHR\nJFK MUC\nSFO SJC\nLHR SFO", expected: "JFK MUC LHR SFO SJC"
+            },
+            { 
+                id: "111", type: "Hard", title: "Longest Increasing Path in Matrix", 
+                desc: "Find length of longest increasing path.\n\nInput: Matrix.\nOutput: Length.",
+                testInput: "9 9 4\n6 6 8\n2 1 1", expected: "4"
+            },
+            { 
+                id: "112", type: "Hard", title: "Word Search II", 
+                desc: "Find all words from dictionary in board.\n\nInput: Board, Words.\nOutput: Found Words.",
+                testInput: "o a a n\ne t a e\ni h k r\ni f l v\noath pea eat rain", expected: "eat oath"
+            },
+            { 
+                id: "113", type: "Hard", title: "Reverse Nodes in k-Group", 
+                desc: "Reverse nodes of list k at a time.\n\nInput: k, List.\nOutput: List.",
+                testInput: "2\n1 2 3 4 5", expected: "2 1 4 3 5"
+            },
+            { 
+                id: "17", type: "Easy", title: "Valid Parentheses", 
+                desc: "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\nInput: A string containing brackets.\nOutput: true or false.",
+                testInput: "()[]{}", expected: "true"
+            },
+            { 
+                id: "18", type: "Easy", title: "Best Time to Buy & Sell Stock", 
+                desc: "You are given an array prices where prices[i] is the price of a given stock on the ith day. Maximize profit by buying one day and selling another.\n\nInput: Space separated prices.\nOutput: Max profit.",
+                testInput: "7 1 5 3 6 4", expected: "5"
+            },
+            { 
+                id: "19", type: "Easy", title: "Valid Palindrome", 
+                desc: "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.\n\nInput: A string.\nOutput: true or false.",
+                testInput: "A man, a plan, a canal: Panama", expected: "true"
+            },
+            { 
+                id: "20", type: "Easy", title: "Valid Anagram", 
+                desc: "Given two strings s and t, return true if t is an anagram of s, and false otherwise.\n\nInput: Two strings on separate lines.\nOutput: true or false.",
+                testInput: "anagram\nnagaram", expected: "true"
+            },
+            { 
+                id: "21", type: "Easy", title: "Merge Two Sorted Lists", 
+                desc: "Merge two sorted linked lists and return it as a sorted list.\n\nInput: Two lines, each with space-separated numbers.\nOutput: Merged list.",
+                testInput: "1 2 4\n1 3 4", expected: "1 1 2 3 4 4"
+            },
+            { 
+                id: "22", type: "Easy", title: "Binary Search", 
+                desc: "Given sorted array and target, return index or -1.\n\nInput: Target on line 1, Array on line 2.\nOutput: Index.",
+                testInput: "9\n-1 0 3 5 9 12", expected: "4"
+            },
+            { 
+                id: "23", type: "Easy", title: "Climbing Stairs", 
+                desc: "You are climbing a staircase. It takes n steps. You can climb 1 or 2 steps. How many distinct ways?\n\nInput: n\nOutput: Number of ways.",
+                testInput: "3", expected: "3"
+            },
+            { 
+                id: "24", type: "Easy", title: "Reverse Linked List", 
+                desc: "Given the head of a singly linked list, reverse the list, and return the reversed list.\n\nInput: Space separated list.\nOutput: Reversed list.",
+                testInput: "1 2 3 4 5", expected: "5 4 3 2 1"
+            },
+            { 
+                id: "25", type: "Easy", title: "Contains Duplicate", 
+                desc: "Return true if any value appears at least twice in the array.\n\nInput: Space separated nums.\nOutput: true or false.",
+                testInput: "1 2 3 1", expected: "true"
+            },
+            { 
+                id: "26", type: "Easy", title: "Invert Binary Tree", 
+                desc: "Given the root of a binary tree, invert the tree, and return its root. (Level Order).\n\nInput: 4 2 7 1 3 6 9\nOutput: 4 7 2 9 6 3 1",
+                testInput: "4 2 7 1 3 6 9", expected: "4 7 2 9 6 3 1"
+            },
+            { 
+                id: "27", type: "Easy", title: "Max Depth of Binary Tree", 
+                desc: "Given the root of a binary tree, return its maximum depth.\n\nInput: Tree level order (use -1 for null).\nOutput: Depth.",
+                testInput: "3 9 20 -1 -1 15 7", expected: "3"
+            },
+            { 
+                id: "28", type: "Easy", title: "Same Tree", 
+                desc: "Given two binary trees, check if they are the same.\n\nInput: Tree 1 on line 1, Tree 2 on line 2.\nOutput: true/false.",
+                testInput: "1 2 3\n1 2 3", expected: "true"
+            },
+            { 
+                id: "29", type: "Easy", title: "Number of 1 Bits", 
+                desc: "Write a function that takes an unsigned integer and returns the number of '1' bits (Hamming weight).\n\nInput: n (integer)\nOutput: Count.",
+                testInput: "11", expected: "3"
+            },
+            { 
+                id: "30", type: "Easy", title: "Counting Bits", 
+                desc: "Given n, return array of 1-bit counts for 0 to n.\n\nInput: n\nOutput: Space separated counts.",
+                testInput: "2", expected: "0 1 1"
+            },
+
+            // --- MEDIUM (Top 30) ---
+            { 
+                id: "72", type: "Medium", title: "3Sum", 
+                desc: "Given an array nums, return all triplets [nums[i], nums[j], nums[k]] such that i != j != k and sum is 0.\n\nInput: Space separated nums.\nOutput: Triplets on new lines.",
+                testInput: "-1 0 1 2 -1 -4", expected: "-1 -1 2\n-1 0 1"
+            },
+            { 
+                id: "73", type: "Medium", title: "Group Anagrams", 
+                desc: "Group anagrams together.\n\nInput: Space separated strings.\nOutput: Groups.",
+                testInput: "eat tea tan ate nat bat", expected: "[bat] [nat, tan] [ate, eat, tea]"
+            },
+            { 
+                id: "74", type: "Medium", title: "Top K Frequent Elements", 
+                desc: "Return the k most frequent elements.\n\nInput: Line 1: k, Line 2: nums.\nOutput: The elements.",
+                testInput: "2\n1 1 1 2 2 3", expected: "1 2"
+            },
+            { 
+                id: "75", type: "Medium", title: "Product of Array Except Self", 
+                desc: "Return array where output[i] is product of all nums except nums[i]. O(n) time.\n\nInput: Nums.\nOutput: Products.",
+                testInput: "1 2 3 4", expected: "24 12 8 6"
+            },
+            { 
+                id: "76", type: "Medium", title: "Longest Consecutive Sequence", 
+                desc: "Find length of longest consecutive elements sequence.\n\nInput: Nums.\nOutput: Length.",
+                testInput: "100 4 200 1 3 2", expected: "4"
+            },
+            { 
+                id: "77", type: "Medium", title: "Longest Substring w/o Repeats", 
+                desc: "Find length of longest substring without repeating characters.\n\nInput: String.\nOutput: Length.",
+                testInput: "abcabcbb", expected: "3"
+            },
+            { 
+                id: "78", type: "Medium", title: "Longest Repeating Char Replacement", 
+                desc: "Replace k chars to make longest substring of same char.\n\nInput: Line 1: k, Line 2: String.\nOutput: Length.",
+                testInput: "2\nABAB", expected: "4"
+            },
+            { 
+                id: "79", type: "Medium", title: "Container With Most Water", 
+                desc: "Find two lines that together with the x-axis form a container, such that the container contains the most water.\n\nInput: Heights.\nOutput: Max Area.",
+                testInput: "1 8 6 2 5 4 8 3 7", expected: "49"
+            },
+            { 
+                id: "80", type: "Medium", title: "Remove Nth Node From End", 
+                desc: "Remove the nth node from the end of the list and return its head.\n\nInput: Line 1: n, Line 2: List.\nOutput: List.",
+                testInput: "2\n1 2 3 4 5", expected: "1 2 3 5"
+            },
+            { 
+                id: "81", type: "Medium", title: "Reorder List", 
+                desc: "Reorder list to L0 -> Ln -> L1 -> Ln-1...\n\nInput: List.\nOutput: Reordered List.",
+                testInput: "1 2 3 4", expected: "1 4 2 3"
+            },
+            { 
+                id: "82", type: "Medium", title: "Level Order Traversal", 
+                desc: "Return level order traversal of binary tree nodes.\n\nInput: Tree array.\nOutput: Levels.",
+                testInput: "3 9 20 -1 -1 15 7", expected: "[[3],[9,20],[15,7]]"
+            },
+            { 
+                id: "83", type: "Medium", title: "Validate BST", 
+                desc: "Determine if it is a valid binary search tree (BST).\n\nInput: Tree.\nOutput: true/false.",
+                testInput: "2 1 3", expected: "true"
+            },
+            { 
+                id: "84", type: "Medium", title: "Kth Smallest Element in BST", 
+                desc: "Return the kth smallest value in a BST.\n\nInput: Line 1: k, Line 2: Tree.\nOutput: Value.",
+                testInput: "1\n3 1 4 -1 2", expected: "1"
+            },
+            { 
+                id: "85", type: "Medium", title: "Number of Islands", 
+                desc: "Count islands ('1's surrounded by '0's).\n\nInput: Grid rows (space separated).\nOutput: Count.",
+                testInput: "1 1 1 1 0\n1 1 0 1 0\n1 1 0 0 0\n0 0 0 0 0", expected: "1"
+            },
+            { 
+                id: "86", type: "Medium", title: "Clone Graph", 
+                desc: "Return a deep copy (clone) of the graph.\n\nInput: Adj List.\nOutput: Cloned Adj List.",
+                testInput: "[[2,4],[1,3],[2,4],[1,3]]", expected: "[[2,4],[1,3],[2,4],[1,3]]"
+            },
+            { 
+                id: "87", type: "Medium", title: "Pacific Atlantic Water Flow", 
+                desc: "Return grid coordinates where water flows to both oceans.\n\nInput: Matrix rows.\nOutput: Coordinates.",
+                testInput: "1 2 2 3 5\n3 2 3 4 4\n2 4 5 3 1\n6 7 1 4 5\n5 1 1 2 4", expected: "[[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]"
+            },
+            { 
+                id: "88", type: "Medium", title: "Course Schedule", 
+                desc: "Can you finish all courses?\n\nInput: numCourses, prerequisites.\nOutput: true/false.",
+                testInput: "2\n[[1,0]]", expected: "true"
+            },
+            { 
+                id: "89", type: "Medium", title: "Coin Change", 
+                desc: "Fewest coins to make amount.\n\nInput: Line 1: amount, Line 2: coins.\nOutput: Count.",
+                testInput: "11\n1 2 5", expected: "3"
+            },
+            { 
+                id: "90", type: "Medium", title: "Longest Increasing Subsequence", 
+                desc: "Length of LIS.\n\nInput: Nums.\nOutput: Length.",
+                testInput: "10 9 2 5 3 7 101 18", expected: "4"
+            },
+            { 
+                id: "91", type: "Medium", title: "Longest Common Subsequence", 
+                desc: "Length of LCS.\n\nInput: Text1, Text2.\nOutput: Length.",
+                testInput: "abcde\nace", expected: "3"
+            },
+            { 
+                id: "92", type: "Medium", title: "Word Break", 
+                desc: "Can s be segmented into dictionary words?\n\nInput: s, dictionary.\nOutput: true/false.",
+                testInput: "leetcode\nleet code", expected: "true"
+            },
+            { 
+                id: "93", type: "Medium", title: "Combination Sum", 
+                desc: "Unique combinations summing to target.\n\nInput: Target, Candidates.\nOutput: Combinations.",
+                testInput: "7\n2 3 6 7", expected: "[[2,2,3],[7]]"
+            },
+            { 
+                id: "94", type: "Medium", title: "House Robber", 
+                desc: "Max money without alerting police (no adjacent).\n\nInput: Nums.\nOutput: Max Amount.",
+                testInput: "1 2 3 1", expected: "4"
+            },
+            { 
+                id: "95", type: "Medium", title: "House Robber II", 
+                desc: "Houses are circular.\n\nInput: Nums.\nOutput: Max Amount.",
+                testInput: "2 3 2", expected: "3"
+            },
+            { 
+                id: "96", type: "Medium", title: "Decode Ways", 
+                desc: "Number of ways to decode message (A=1, B=2...).\n\nInput: String.\nOutput: Count.",
+                testInput: "12", expected: "2"
+            },
+            { 
+                id: "97", type: "Medium", title: "Unique Paths", 
+                desc: "Ways to reach bottom-right.\n\nInput: m n.\nOutput: Paths.",
+                testInput: "3 7", expected: "28"
+            },
+            { 
+                id: "98", type: "Medium", title: "Jump Game", 
+                desc: "Can you reach the last index?\n\nInput: Nums.\nOutput: true/false.",
+                testInput: "2 3 1 1 4", expected: "true"
+            },
+            { 
+                id: "99", type: "Medium", title: "Rotate Image", 
+                desc: "Rotate matrix 90 deg clockwise.\n\nInput: Matrix.\nOutput: Rotated Matrix.",
+                testInput: "1 2 3\n4 5 6\n7 8 9", expected: "7 4 1\n8 5 2\n9 6 3"
+            },
+            { 
+                id: "100", type: "Medium", title: "Spiral Matrix", 
+                desc: "Return elements in spiral order.\n\nInput: Matrix.\nOutput: List.",
+                testInput: "1 2 3\n4 5 6\n7 8 9", expected: "1 2 3 6 9 8 7 4 5"
+            },
+            { 
+                id: "101", type: "Medium", title: "Set Matrix Zeroes", 
+                desc: "If element is 0, set row/col to 0.\n\nInput: Matrix.\nOutput: Matrix.",
+                testInput: "1 1 1\n1 0 1\n1 1 1", expected: "1 0 1\n0 0 0\n1 0 1"
+            },
+
+            // --- HARD (10 Key Problems) ---
+            { 
+                id: "114", type: "Hard", title: "Median of Two Sorted Arrays", 
+                desc: "Find the median of the two sorted arrays.\n\nInput: Array1 on line 1, Array2 on line 2.\nOutput: Median.",
+                testInput: "1 3\n2", expected: "2.00000"
+            },
+            { 
+                id: "115", type: "Hard", title: "Merge k Sorted Lists", 
+                desc: "Merge k linked lists.\n\nInput: Lists.\nOutput: Merged List.",
+                testInput: "[[1,4,5],[1,3,4],[2,6]]", expected: "1 1 2 3 4 4 5 6"
+            },
+            { 
+                id: "116", type: "Hard", title: "Word Ladder", 
+                desc: "Shortest transformation sequence length.\n\nInput: beginWord endWord wordList.\nOutput: Length.",
+                testInput: "hit cog hot dot dog lot log cog", expected: "5"
+            },
+            { 
+                id: "117", type: "Hard", title: "Trapping Rain Water", 
+                desc: "Compute how much water it can trap after raining.\n\nInput: Heights.\nOutput: Water.",
+                testInput: "0 1 0 2 1 0 1 3 2 1 2 1", expected: "6"
+            },
+            { 
+                id: "118", type: "Hard", title: "Largest Rectangle in Histogram", 
+                desc: "Largest rectangle area in histogram.\n\nInput: Heights.\nOutput: Max Area.",
+                testInput: "2 1 5 6 2 3", expected: "10"
+            },
+            { 
+                id: "119", type: "Hard", title: "Edit Distance", 
+                desc: "Min operations to convert word1 to word2.\n\nInput: word1 word2.\nOutput: Ops.",
+                testInput: "horse ros", expected: "3"
+            },
+            { 
+                id: "120", type: "Hard", title: "Binary Tree Max Path Sum", 
+                desc: "Max path sum in tree.\n\nInput: Tree.\nOutput: Sum.",
+                testInput: "1 2 3", expected: "6"
+            },
+            { 
+                id: "121", type: "Hard", title: "Serialize & Deserialize BT", 
+                desc: "Design an algorithm to serialize and deserialize a binary tree.\n\nInput: Tree.\nOutput: Serialized string.",
+                testInput: "1 2 3 -1 -1 4 5", expected: "1 2 3 null null 4 5"
+            },
+            { 
+                id: "122", type: "Hard", title: "Find Median from Data Stream", 
+                desc: "Design a class that supports adding nums and finding median.\n\nInput: Commands.\nOutput: Medians.",
+                testInput: "add(1), add(2), findMedian(), add(3), findMedian()", expected: "1.5 2.0"
+            },
+            { 
+                id: "123", type: "Hard", title: "N-Queens", 
+                desc: "Place n queens on nxn board.\n\nInput: n.\nOutput: Solutions.",
+                testInput: "4", expected: "[[.Q..,...Q,Q...,..Q.],[..Q.,Q...,...Q,.Q..]]"
+            },
+            // --- BATCH 3: FINAL 10 CRITICAL PROBLEMS ---
+
+            { 
+                id: "102", type: "Medium", title: "Search in Rotated Sorted Array", 
+                desc: "There is an integer array nums sorted in ascending order (with distinct values) that is rotated at an unknown pivot index. Given the array nums after the rotation and an integer target, return the index of target if it is in nums, or -1 if it is not.\n\nInput: Target, Nums.\nOutput: Index.",
+                testInput: "0\n4 5 6 7 0 1 2", expected: "4"
+            },
+            { 
+                id: "103", type: "Medium", title: "Maximum Product Subarray", 
+                desc: "Given an integer array nums, find a contiguous non-empty subarray within the array that has the largest product, and return the product.\n\nInput: Nums.\nOutput: Max Product.",
+                testInput: "2 3 -2 4", expected: "6"
+            },
+            { 
+                id: "31", type: "Easy", title: "Diameter of Binary Tree", 
+                desc: "Given the root of a binary tree, return the length of the diameter of the tree. The diameter is the length of the longest path between any two nodes in a tree. This path may or may not pass through the root.\n\nInput: Tree Level Order.\nOutput: Diameter.",
+                testInput: "1 2 3 4 5", expected: "3"
+            },
+            { 
+                id: "104", type: "Medium", title: "Lowest Common Ancestor (Bin Tree)", 
+                desc: "Given a binary tree, find the lowest common ancestor (LCA) of two given nodes in the tree.\n\nInput: Tree, p, q.\nOutput: LCA Value.",
+                testInput: "3 5 1 6 2 0 8 -1 -1 7 4\n5\n1", expected: "3"
+            },
+            { 
+                id: "124", type: "Hard", title: "Minimum Window Substring", 
+                desc: "Given two strings s and t of lengths m and n respectively, return the minimum window substring of s such that every character in t (including duplicates) is included in the window.\n\nInput: s, t.\nOutput: Substring.",
+                testInput: "ADOBECODEBANC\nABC", expected: "BANC"
+            },
+            { 
+                id: "125", type: "Hard", title: "Sliding Window Maximum", 
+                desc: "You are given an array of integers nums, there is a sliding window of size k which is moving from the very left of the array to the very right. Return the max sliding window.\n\nInput: k, Nums.\nOutput: Max Array.",
+                testInput: "3\n1 3 -1 -3 5 3 6 7", expected: "3 3 5 5 6 7"
+            },
+            { 
+                id: "105", type: "Medium", title: "Copy List with Random Pointer", 
+                desc: "Construct a deep copy of the linked list where each node contains an additional random pointer.\n\nInput: List (as pairs of [val, randomIndex]).\nOutput: List.",
+                testInput: "[[7,null],[13,0],[11,4],[10,2],[1,0]]", expected: "[[7,null],[13,0],[11,4],[10,2],[1,0]]"
+            },
+            { 
+                id: "106", type: "Medium", title: "Non-overlapping Intervals", 
+                desc: "Given an array of intervals, return the minimum number of intervals you need to remove to make the rest of the intervals non-overlapping.\n\nInput: Intervals.\nOutput: Count.",
+                testInput: "1 2\n2 3\n3 4\n1 3", expected: "1"
+            },
+            { 
+                id: "107", type: "Medium", title: "Partition Equal Subset Sum", 
+                desc: "Given a non-empty array nums containing only positive integers, find if the array can be partitioned into two subsets such that the sum of elements in both subsets is equal.\n\nInput: Nums.\nOutput: true/false.",
+                testInput: "1 5 11 5", expected: "true"
+            },
+            { 
+                id: "108", type: "Medium", title: "Graph Valid Tree", 
+                desc: "Given n nodes labeled from 0 to n-1 and a list of undirected edges, write a function to check whether these edges make up a valid tree.\n\nInput: n, Edges.\nOutput: true/false.",
+                testInput: "5\n0 1, 0 2, 0 3, 1 4", expected: "true"
+            }
+        ];
+
+        // --- AUTH ---
+        window.toggleAuthMode = function() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-btn').innerText = isLoginMode ? "LOGIN" : "CREATE ACCOUNT";
+            document.getElementById('auth-switch-text').innerText = isLoginMode ? "New? Create Account" : "Have account? Login";
+        }
+
+        window.handleAuth = function() {
+            const email = document.getElementById('email-input').value;
+            const pass = document.getElementById('password-input').value;
+            const err = document.getElementById('login-error');
+            
+            if(!email || !pass) return;
+            
+            const p = isLoginMode 
+                ? signInWithEmailAndPassword(auth, email, pass)
+                : createUserWithEmailAndPassword(auth, email, pass);
+                
+            p.then((c) => {
+                currentUser = c.user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                initCharts(); listenProgress();
+            }).catch(e => {
+                err.innerText = e.message;
+                err.classList.remove('hidden');
+            });
+        }
+        window.logout = () => signOut(auth).then(() => location.reload());
+
+        // --- EDITOR SETUP ---
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('monaco-container'), {
+                value: "", language: 'python', theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, fontSize: 14
+            });
+        });
+
+        // --- APP LOGIC ---
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('sidebar-closed');
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            completionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { datasets: [{ data: [0, 75], backgroundColor: ['#22c55e', '#374151'], borderWidth: 0 }] },
+                options: { cutout: '70%', events: [] }
+            });
+        }
+
+        function listenProgress() {
+            onSnapshot(collection(db, "users", currentUser.uid, "dsa_progress"), (snap) => {
+                let solved = 0;
+                snap.forEach(d => { if(d.data().completed) solved++; });
+                document.getElementById('completed-count').innerText = solved;
+                completionChart.data.datasets[0].data = [solved, 75-solved];
+                completionChart.update();
+            });
+        }
+
+        window.loadChapter = function(type) {
+            const list = document.getElementById('problem-list');
+            list.innerHTML = "";
+            problems.filter(p => p.type === type).forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-800 rounded truncate transition";
+                btn.innerText = `${p.id}. ${p.title}`;
+                btn.onclick = () => loadProblem(p);
+                list.appendChild(btn);
+            });
+        }
+
+        async function loadProblem(p) {
+            if(currentProblem && currentProblem.id === p.id) return; // Prevent reload
+            
+            // 1. Save previous work before switching? (Optional - typically user clicks save)
+            
+            currentProblem = p;
+            document.getElementById('problem-title').innerText = p.title;
+            document.getElementById('problem-id').innerText = "ID: " + p.id;
+            document.getElementById('desc-text').innerText = p.desc;
+            
+            if(p.testInput) {
+                document.getElementById('test-case-box').classList.remove('hidden');
+                document.getElementById('tc-input').innerText = p.testInput;
+                document.getElementById('tc-output').innerText = p.expected;
+                document.getElementById('custom-input').value = p.testInput;
+            } else {
+                document.getElementById('test-case-box').classList.add('hidden');
+                document.getElementById('custom-input').value = "";
+            }
+
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // 2. FETCH SAVED CODE
+            document.getElementById('save-status').innerText = "LOADING...";
+            const snap = await getDoc(doc(db, "users", currentUser.uid, "dsa_progress", "p"+p.id));
+            
+            if(snap.exists()) {
+                editor.setValue(snap.data().code);
+                document.getElementById('save-status').innerText = "RESTORED";
+                document.getElementById('submit-btn').disabled = false;
+                document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                document.getElementById('save-status').innerText = "UNSAVED";
+                // 3. FORCE RESET TO TEMPLATE (Fixes the bug)
+                window.switchLang(true); 
+            }
+            
+            secondsElapsed = 0;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                document.getElementById('timer').innerText = new Date(secondsElapsed * 1000).toISOString().substr(14, 5);
+            }, 1000);
+        }
+
+        // Updated switchLang with FORCE parameter
+        window.switchLang = function(force = false) {
+            const lang = document.getElementById('lang-select').value;
+            const ext = { python: "main.py", java: "Main.java", cpp: "main.cpp" };
+            document.getElementById('filename').innerText = ext[lang];
+            
+            monaco.editor.setModelLanguage(editor.getModel(), lang === 'cpp' ? 'cpp' : lang);
+            
+            // Only overwrite if FORCE is true (new problem) or editor is empty
+            if(force || editor.getValue().trim() === "") {
+                editor.setValue(templates[lang]);
+            }
+        }
+
+        window.resetCode = () => { window.switchLang(true); }
+
+        window.runCode = async function() {
+            const code = editor.getValue();
+            const input = document.getElementById('custom-input').value;
+            const term = document.getElementById('term-out');
+            const lang = document.getElementById('lang-select').value;
+            
+            term.innerText = "Running...";
+            
+            let v = "3.10.0";
+            if(lang === "java") v = "15.0.2";
+            if(lang === "cpp") v = "10.2.0";
+
+            try {
+                const res = await fetch("https://emkc.org/api/v2/piston/execute", {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ language: lang, version: v, files: [{ content: code }], stdin: input })
+                });
+                const data = await res.json();
+                
+                const output = data.run.stdout + data.run.stderr;
+                term.innerText = output;
+
+                if(currentProblem.testInput && input.trim() === currentProblem.testInput.trim()) {
+                    if(output.trim() === currentProblem.expected.trim()) {
+                        term.innerText += "\n\n TEST CASE PASSED!";
+                        document.getElementById('submit-btn').disabled = false;
+                        document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        term.innerText += `\n\n FAILED. Expected:\n${currentProblem.expected}`;
+                    }
+                } else {
+                    // Enable submit for manual verification
+                    document.getElementById('submit-btn').disabled = false;
+                    document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+
+            } catch(e) { term.innerText = "Error: " + e.message; }
+        }
+
+        window.markDone = async function() {
+            if(!currentProblem) return;
+            document.getElementById('save-status').innerText = "SAVING...";
+            await setDoc(doc(db, "users", currentUser.uid, "dsa_progress", "p"+currentProblem.id), {
+                problem_id: currentProblem.id,
+                completed: true,
+                code: editor.getValue(),
+                lang: document.getElementById('lang-select').value,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+            document.getElementById('save-status').innerText = "SAVED";
+            alert("Problem Marked as Completed! ");
+        }
+    </script>
+</body>
+</html>
